@@ -1,0 +1,192 @@
+{% extends 'base.html' %}
+
+{% block title %}Кликер{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-8 col-md-10">
+            <!-- Основная карточка кликера -->
+            <div class="card shadow-lg border-0 rounded-4">
+                <div class="card-header bg-primary text-white rounded-top-4 py-4">
+                    <h1 class="card-title text-center mb-0 display-4">
+                        <i class="bi bi-cursor-fill me-3"></i>Кликер!
+                    </h1>
+                </div>
+
+
+                    <!-- Статистика -->
+                    <div class="text-center mb-5">
+                        <div class="display-1 fw-bold text-primary mb-3">
+                            {{ current_user.clicks }}
+                        </div>
+                        <p class="lead text-muted">
+                            <i class="bi bi-bar-chart-fill me-2"></i>Общее количество кликов
+                        </p>
+                        <div class="progress mb-4" style="height: 20px;">
+                            {% set progress = (current_user.clicks % 100) %}
+                            <div class="progress-bar bg-success progress-bar-striped progress-bar-animated"
+                                 role="progressbar"
+                                 style="width: {{ progress }}%"
+                                 aria-valuenow="{{ progress }}"
+                                 aria-valuemin="0"
+                                 aria-valuemax="100">
+                                {{ progress }}%
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Кнопка клика -->
+                    <div class="text-center">
+                        <form action="{{ url_for('click') }}" method="POST" >
+                            <button type="submit"
+                                    class="btn btn-danger btn-lg rounded-pill px-5 py-4 shadow-lg click-button">
+
+                                <i class="bi bi-hand-index-thumb-fill me-2"></i>
+                                <span class="fw-bold">КЛИК!</span>
+                            </button>
+                        </form>
+                    </div>
+
+                    <!-- Дополнительная информация -->
+                    <div class="row mt-5">
+                        <div class="col-md-6 mb-3">
+                            <div class="card border-0 bg-light h-100">
+                                <div class="card-body text-center">
+                                    <i class="bi bi-trophy-fill text-warning display-6 mb-3"></i>
+                                    <h5 class="card-title">Уровень</h5>
+                                    <h2 class="text-primary">#{{ (current_user.clicks // 100) + 1 }}</h2>
+                                    <p class="text-muted small">
+                                        До следующего уровня: {{ 100 - (current_user.clicks % 100) }} кликов
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <div class="card border-0 bg-light h-100">
+                                <div class="card-body text-center">
+                                    <i class="bi bi-lightning-charge-fill text-success display-6 mb-3"></i>
+                                    <h5 class="card-title">Скорость</h5>
+                                    <h2 class="text-success">{{ current_user.clicks_per_minute|round(1) }}</h2>
+                                    <p class="text-muted small">Кликов в минуту</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Подсказка -->
+                    <div class="alert alert-info mt-4 border-0 bg-light">
+                        <div class="d-flex">
+                            <i class="bi bi-info-circle-fill text-primary me-3 fs-4"></i>
+                            <div>
+                                <h6 class="alert-heading mb-2">Совет по игре</h6>
+                                <p class="mb-0">Нажимайте на кнопку как можно быстрее! Каждые 100 кликов вы получаете новый уровень.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card-footer bg-light rounded-bottom-4 py-3 text-center">
+                    <small class="text-muted">
+                        <i class="bi bi-clock-history me-1"></i>
+                        Последнее обновление: {{ current_user.updated_at.strftime('%H:%M:%S') if current_user.updated_at else 'Недавно' }}
+                    </small>
+                </div>
+            </div>
+
+            <!-- Анимация кликов (опционально) -->
+            <div id="clickAnimation" class="position-fixed"></div>
+        </div>
+    </div>
+</div>
+
+<!-- Дополнительные стили -->
+<style>
+    .click-button {
+        transition: all 0.1s ease;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .click-button:active {
+        transform: scale(0.95);
+        box-shadow: 0 0 0 0.5rem rgba(220, 53, 69, 0.25) !important;
+    }
+
+    .click-button:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 0.5rem 1.5rem rgba(220, 53, 69, 0.4) !important;
+    }
+
+    .progress-bar-animated {
+        animation: progress-animation 2s linear infinite;
+    }
+
+    @keyframes progress-animation {
+        0% { background-position: 0 0; }
+        100% { background-position: 40px 0; }
+    }
+
+    .card {
+        transition: transform 0.3s ease;
+    }
+
+    .card:hover {
+        transform: translateY(-5px);
+    }
+</style>
+
+<!-- JavaScript для улучшения взаимодействия -->
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const clickButton = document.querySelector('.click-button');
+
+        clickButton.addEventListener('mousedown', function() {
+            this.classList.add('active');
+        });
+
+        clickButton.addEventListener('mouseup', function() {
+            this.classList.remove('active');
+        });
+
+        // Анимация клика (опционально)
+        clickButton.addEventListener('click', function(e) {
+            createClickAnimation(e.clientX, e.clientY);
+        });
+
+        function createClickAnimation(x, y) {
+            const animation = document.createElement('div');
+            animation.innerHTML = '+1';
+            animation.style.cssText = `
+                position: fixed;
+                left: ${x}px;
+                top: ${y}px;
+                color: #dc3545;
+                font-weight: bold;
+                font-size: 1.5rem;
+                pointer-events: none;
+                z-index: 9999;
+                animation: floatUp 1s ease-out forwards;
+            `;
+            document.getElementById('clickAnimation').appendChild(animation);
+
+            setTimeout(() => {
+                animation.remove();
+            }, 1000);
+        }
+    });
+</script>
+
+<style>
+    @keyframes floatUp {
+        0% {
+            transform: translateY(0) scale(1);
+            opacity: 1;
+        }
+        100% {
+            transform: translateY(-50px) scale(1.5);
+            opacity: 0;
+        }
+    }
+</style>
+{% endblock %}
